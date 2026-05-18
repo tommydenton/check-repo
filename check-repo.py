@@ -126,6 +126,10 @@ def line_fit(text: str, width: int) -> str:
     return plain[: max(0, width - 3)] + "..."
 
 
+def format_branch(branch: str) -> str:
+    return branch if len(branch) <= 5 else branch[:5] + "..."
+
+
 def draw_top(width: int) -> str:
     return f"{COLORS['border']}╭{'─' * width}╮{COLORS['nc']}"
 
@@ -240,7 +244,7 @@ def render(states: list[tuple[str, str, str, int, int]], width: int, categories:
 
     max_target = max(len(t) for _, t, *_ in states) if states else 24
     status_col = max(len(s) for s in REPO_STATES)
-    branch_col = max(6, min(18, max((len(b) for _, _, b, _, _ in states), default=6)))
+    branch_col = len("branch")
     ahead_col = len("ahead")
     behind_col = len("behind")
 
@@ -282,9 +286,10 @@ def render(states: list[tuple[str, str, str, int, int]], width: int, categories:
         grouped_target_rows.extend(("target", row) for row in rows)
 
     title = "check-repo"
-    header_line = f"{'Targets':<20} {'branch':>{branch_col}} {'ahead':>{ahead_col}} {'behind':>{behind_col}} {'status':>{status_col}}"
-    content_rows = [title, progress_row, header_line, *[r[1] if r[0] == "header" else f"  {r[1][1]} {r[1][5]}" for r in grouped_target_rows], *summary_rows]
-    computed_width = max(width, max(len(visible_text(r)) for r in content_rows) + 2)
+    min_line_width = 2 + 2 + max_target + 1 + branch_col + 1 + ahead_col + 1 + behind_col + 1 + status_col
+    header_line = f"{'Targets':<{max_target + 2}} {'branch':>{branch_col}} {'ahead':>{ahead_col}} {'behind':>{behind_col}} {'status':>{status_col}}"
+    content_rows = [title, progress_row, header_line, *[r[1] if r[0] == "header" else f"  {r[1][1]} {format_branch(r[1][2])} {r[1][5]}" for r in grouped_target_rows], *summary_rows]
+    computed_width = max(width, min_line_width, max(len(visible_text(r)) for r in content_rows) + 2)
 
     out = []
     out.append(draw_top(computed_width))
@@ -293,7 +298,7 @@ def render(states: list[tuple[str, str, str, int, int]], width: int, categories:
     out.append(draw_row(draw_progress_row(bar, done, total, computed_width - 2), computed_width))
     out.append(draw_separator(computed_width))
 
-    target_text_width = max(1, (computed_width - 2) - 3 - branch_col - ahead_col - behind_col - status_col - 4)
+    target_text_width = max_target
     out.append(draw_row(f"{'Targets':<{target_text_width + 2}} {'branch':>{branch_col}} {'ahead':>{ahead_col}} {'behind':>{behind_col}} {'status':>{status_col}}", computed_width))
     for row_type, row in grouped_target_rows:
         if row_type == "header":
@@ -304,14 +309,15 @@ def render(states: list[tuple[str, str, str, int, int]], width: int, categories:
             continue
 
         idx, target, branch, ahead, behind, state, color = row
-        target_display = line_fit(target, target_text_width)
+        target_display = target
         cursor = f"{COLORS['cyan']}›{COLORS['nc']}" if selected_idx == idx else " "
-        branch_colored = f"{COLORS['cyan']}{line_fit(branch, branch_col):>{branch_col}}{COLORS['nc']}"
+        branch_short = format_branch(branch)
+        branch_colored = f"{COLORS['cyan']}{branch_short:>{branch_col}}{COLORS['nc']}"
         ahead_colored = f"{COLORS['green'] if ahead > 0 else COLORS['nc']}{ahead:>{ahead_col}}{COLORS['nc']}"
         behind_colored = f"{COLORS['red'] if behind > 0 else COLORS['nc']}{behind:>{behind_col}}{COLORS['nc']}"
         line = f"{cursor} {target_display:<{target_text_width}} {branch_colored} {ahead_colored} {behind_colored} {color}{state:>{status_col}}{COLORS['nc']}"
         if selected_idx == idx:
-            selected_line = f"› {target_display:<{target_text_width}} {line_fit(branch, branch_col):>{branch_col}} {ahead:>{ahead_col}} {behind:>{behind_col}} {state:>{status_col}}"
+            selected_line = f"› {target_display:<{target_text_width}} {branch_short:>{branch_col}} {ahead:>{ahead_col}} {behind:>{behind_col}} {state:>{status_col}}"
             out.append(draw_selected_row(selected_line, computed_width))
         else:
             out.append(draw_row(line, computed_width))
@@ -482,8 +488,7 @@ def main():
     targets = visible_targets()
     dirs = [d for _, d in targets]
     categories = [c for c, _ in targets]
-    term_width = shutil.get_terminal_size((100, 30)).columns
-    width = min(max(max(len(abbreviate(d)) for d in dirs) + 34, 64), max(40, term_width - 4))
+    width = max(max(len(abbreviate(d)) for d in dirs) + 34, 64)
 
     if not args.interactive:
         live_render = sys.stdout.isatty()
