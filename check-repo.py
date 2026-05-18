@@ -609,15 +609,28 @@ def main():
             sys.stdout.flush()
             printed_lines = len(lines)
             new_path = sys.stdin.readline().strip()
-            status_lines.append(f"{COLORS['blue']}ADDING...{COLORS['nc']} {abbreviate(os.path.expanduser(new_path or ''))}")
+            new_repo = os.path.expanduser(new_path) if new_path else ""
+            status_lines.append(f"{COLORS['blue']}ADDING...{COLORS['nc']} {abbreviate(new_repo or '')}")
             if new_path and save_repo_target(new_path, category):
+                previous = {
+                    (categories[i], dirs[i]): states[i]
+                    for i in range(min(len(states), len(dirs), len(categories)))
+                }
                 targets = load_repo_targets()
                 dirs = [d for _, d in targets]
                 categories = [c for c, _ in targets]
-                selected_idx = next_select(selected_idx, 1)
-                states, _ = scan_all(dirs, categories, width, selected_idx=None, render_live=False)
-                selected_idx = next_select(selected_idx, 1)
-                status_lines.append(f"{COLORS['green']}Added repo ({category}):{COLORS['nc']} {abbreviate(os.path.expanduser(new_path))}")
+                states = [previous.get((cat, d), ("PENDING", abbreviate(d), "-", 0, 0)) for cat, d in targets]
+                added_idx = next((i for i, (cat, d) in enumerate(targets) if cat == category and d == new_repo), None)
+                if added_idx is None:
+                    added_idx = len(targets) - 1
+                selected_idx = added_idx
+                lines = render_ui()
+                clear_screen()
+                sys.stdout.write("\n".join(lines) + "\n")
+                sys.stdout.flush()
+                printed_lines = len(lines)
+                states[added_idx] = check_repo(new_repo)
+                status_lines.append(f"{COLORS['green']}Added repo ({category}):{COLORS['nc']} {abbreviate(new_repo)}")
             else:
                 status_lines.append(f"{COLORS['yellow']}Not added (empty or duplicate).{COLORS['nc']}")
         elif key == "d" and dirs:
