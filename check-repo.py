@@ -287,7 +287,8 @@ def render(states: list[tuple[str, str, str, int, int]], width: int, categories:
 
     title = "check-repo"
     min_line_width = 2 + 2 + max_target + 1 + branch_col + 1 + ahead_col + 1 + behind_col + 1 + status_col
-    header_line = f"{'Targets':<{max_target + 2}} {'branch':>{branch_col}} {'ahead':>{ahead_col}} {'behind':>{behind_col}} {'status':>{status_col}}"
+    right_header = f"{'branch':>{branch_col}} {'ahead':>{ahead_col}} {'behind':>{behind_col}} {'status':>{status_col}}"
+    header_line = f"{'Targets':<{max_target + 2}} {right_header}"
     content_rows = [title, progress_row, header_line, *[r[1] if r[0] == "header" else f"  {r[1][1]} {format_branch(r[1][2])} {r[1][5]}" for r in grouped_target_rows], *summary_rows]
     computed_width = max(width, min_line_width, max(len(visible_text(r)) for r in content_rows) + 2)
 
@@ -299,7 +300,7 @@ def render(states: list[tuple[str, str, str, int, int]], width: int, categories:
     out.append(draw_separator(computed_width))
 
     target_text_width = max_target
-    out.append(draw_row(f"{'Targets':<{target_text_width + 2}} {'branch':>{branch_col}} {'ahead':>{ahead_col}} {'behind':>{behind_col}} {'status':>{status_col}}", computed_width))
+    out.append(draw_row(f"{'Targets':<{target_text_width + 2}} {right_header}", computed_width))
     for row_type, row in grouped_target_rows:
         if row_type == "header":
             label = visible_text(row)
@@ -315,9 +316,16 @@ def render(states: list[tuple[str, str, str, int, int]], width: int, categories:
         branch_colored = f"{COLORS['cyan']}{branch_short:>{branch_col}}{COLORS['nc']}"
         ahead_colored = f"{COLORS['green'] if ahead > 0 else COLORS['nc']}{ahead:>{ahead_col}}{COLORS['nc']}"
         behind_colored = f"{COLORS['red'] if behind > 0 else COLORS['nc']}{behind:>{behind_col}}{COLORS['nc']}"
-        line = f"{cursor} {target_display:<{target_text_width}} {branch_colored} {ahead_colored} {behind_colored} {color}{state:>{status_col}}{COLORS['nc']}"
+        right_columns = f"{branch_colored} {ahead_colored} {behind_colored} {color}{state:>{status_col}}{COLORS['nc']}"
+        left_width = max(0, computed_width - 2 - len(visible_text(right_columns)) - 1)
+        left_text = f"{cursor} {target_display}"
+        left_text = line_fit(left_text, left_width).ljust(left_width)
+        line = f"{left_text} {right_columns}"
         if selected_idx == idx:
-            selected_line = f"› {target_display:<{target_text_width}} {branch_short:>{branch_col}} {ahead:>{ahead_col}} {behind:>{behind_col}} {state:>{status_col}}"
+            plain_right_columns = f"{branch_short:>{branch_col}} {ahead:>{ahead_col}} {behind:>{behind_col}} {state:>{status_col}}"
+            plain_left_width = max(0, computed_width - 2 - len(plain_right_columns) - 1)
+            plain_left_text = line_fit(f"› {target_display}", plain_left_width).ljust(plain_left_width)
+            selected_line = f"{plain_left_text} {plain_right_columns}"
             out.append(draw_selected_row(selected_line, computed_width))
         else:
             out.append(draw_row(line, computed_width))
