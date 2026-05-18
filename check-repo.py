@@ -287,7 +287,7 @@ def render(states: list[tuple[str, str, str, int, int]], width: int, categories:
 
     title = "check-repo"
     right_columns_min = branch_col + 1 + ahead_col + 1 + behind_col + 1 + status_col
-    right_padding = 2
+    right_padding = 1
     min_line_width = 2 + 2 + max_target + 2 + right_columns_min + right_padding
     right_header = f"{'branch':>{branch_col}} {'ahead':>{ahead_col}} {'behind':>{behind_col}} {'status':>{status_col}}"
     header_line = f"{'Targets':<{max_target + 2}} {right_header}"
@@ -555,13 +555,19 @@ def main():
         sys.stdout.flush()
         printed_lines = len(lines)
 
-    def run_scan(show_full_ui: bool) -> None:
+    def run_scan(show_full_ui: bool, hide_selection: bool = False) -> None:
         nonlocal states, printed_lines
         states = [("PENDING", abbreviate(d), "-", 0, 0) for d in dirs]
         with ThreadPoolExecutor(max_workers=min(16, len(dirs))) as ex:
             futures = {ex.submit(check_repo, d): i for i, d in enumerate(dirs)}
             while True:
-                lines = render_ui() if show_full_ui else render(states, width, categories, selected_idx=None)
+                if show_full_ui:
+                    scan_selected = None if hide_selection else selected_idx
+                    lines = render(states, width, categories, selected_idx=scan_selected)
+                    lines.extend(legend_box(width))
+                    lines.extend(status_box(status_lines))
+                else:
+                    lines = render(states, width, categories, selected_idx=None)
                 clear_screen()
                 sys.stdout.write("\n".join(lines) + "\n")
                 sys.stdout.flush()
@@ -618,7 +624,7 @@ def main():
             selected_key = None
             if selected_idx is not None and 0 <= selected_idx < len(dirs):
                 selected_key = (categories[selected_idx], dirs[selected_idx])
-            run_scan(show_full_ui=True)
+            run_scan(show_full_ui=True, hide_selection=True)
             if selected_key is not None:
                 selected_idx = next((i for i, pair in enumerate(zip(categories, dirs)) if pair == selected_key), selected_idx)
             if states:
