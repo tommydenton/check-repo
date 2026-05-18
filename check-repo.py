@@ -615,8 +615,16 @@ def main():
             status_lines.append(f"{COLORS['blue']}{status_hint} complete{COLORS['nc']} {abbreviate(repo)}")
         elif key == "r":
             status_lines.append(f"{COLORS['blue']}REFRESHING...{COLORS['nc']}")
+            selected_key = None
+            if selected_idx is not None and 0 <= selected_idx < len(dirs):
+                selected_key = (categories[selected_idx], dirs[selected_idx])
             run_scan(show_full_ui=True)
-            selected_idx = None
+            if selected_key is not None:
+                selected_idx = next((i for i, pair in enumerate(zip(categories, dirs)) if pair == selected_key), selected_idx)
+            if states:
+                selected_idx = min(max(selected_idx if selected_idx is not None else 0, 0), len(states) - 1)
+            else:
+                selected_idx = None
             status_lines.append(f"{COLORS['cyan']}Refreshed all repositories.{COLORS['nc']}")
         elif key == "a":
             mapping = {"1": "default", "2": "linux", "3": "macos", "4": "wsl"}
