@@ -648,15 +648,15 @@ def main():
                 continue
             show_action_state(selected_idx, "DELETING", f"{COLORS['blue']}DELETING...{COLORS['nc']} {abbreviate(target)}")
             if delete_repo_target(target, target_category):
+                previous = {
+                    (categories[i], dirs[i]): states[i]
+                    for i in range(min(len(states), len(dirs), len(categories)))
+                }
                 targets = load_repo_targets()
                 dirs = [d for _, d in targets]
                 categories = [c for c, _ in targets]
                 if not dirs:
                     return
-                previous = {
-                    (categories[i], dirs[i]): states[i]
-                    for i in range(min(len(states), len(dirs), len(categories)))
-                }
                 states = [previous.get((cat, d), ("PENDING", abbreviate(d), "-", 0, 0)) for cat, d in targets]
                 selected_idx = min(selected_idx, len(dirs) - 1)
                 status_lines.append(f"{COLORS['red']}Deleted repo:{COLORS['nc']} {abbreviate(target)}")
