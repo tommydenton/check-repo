@@ -614,7 +614,8 @@ def main():
                 draw_top(width),
                 draw_row(centered("check-repo", width - 2), width),
                 draw_separator(width),
-                draw_row(f"{COLORS['yellow']}No targets found in config.{COLORS['nc']} Add entries manually or run with --interactive.", width),
+                draw_row(f"{COLORS['yellow']}No targets found in config.{COLORS['nc']}", width),
+                draw_row("Add entries manually or run with --interactive.", width),
                 draw_bottom(width),
             ]
             sys.stdout.write("\n".join(lines) + "\n")
@@ -780,6 +781,7 @@ def main():
             status_lines.append(f"{COLORS['cyan']}Refreshed all repositories.{COLORS['nc']}")
         elif key == "a":
             mapping = {"1": "default", "2": "linux", "3": "macos", "4": "wsl"}
+            status_lines.append(f"{COLORS['blue']}ADDING...{COLORS['nc']} choose a category")
             status_lines.append(
                 f"{COLORS['cyan']}c:{COLORS['nc']} cancel | "
                 f"{COLORS['cyan']}1:{COLORS['nc']} default | "
