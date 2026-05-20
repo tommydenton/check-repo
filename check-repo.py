@@ -444,6 +444,19 @@ def load_config() -> dict[str, list[str]]:
         config[cat] = val if isinstance(val, list) else []
     return config
 
+
+def ensure_config_file() -> tuple[dict[str, list[str]], bool]:
+    path = get_config_path()
+    if os.path.exists(path):
+        return load_config(), False
+
+    config = {cat: [] for cat in CATEGORY_ORDER}
+    config["default"] = ["~/example"]
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(config, f, indent=2)
+        f.write("\n")
+    return config, True
+
 def load_repo_targets() -> list[tuple[str, str]]:
     config = load_config()
 
@@ -574,6 +587,11 @@ def main():
     args, _ = parser.parse_known_args()
 
     show_all_categories = False
+    bootstrap_messages: list[str] = []
+
+    _, created_default_config = ensure_config_file()
+    if created_default_config:
+        bootstrap_messages.append(f"{COLORS['yellow']}Missing config file:{COLORS['nc']} created default config with ~/example target.")
 
     def visible_targets() -> list[tuple[str, str]]:
         all_targets = load_repo_targets()
@@ -591,6 +609,16 @@ def main():
     width = max((max(len(abbreviate(d)) for d in dirs) + 34) if dirs else 64, 64)
 
     if not args.interactive:
+        if not dirs:
+            lines = [
+                draw_top(width),
+                draw_row(centered("check-repo", width - 2), width),
+                draw_separator(width),
+                draw_row(f"{COLORS['yellow']}No targets found in config.{COLORS['nc']} Add entries manually or run with --interactive.", width),
+                draw_bottom(width),
+            ]
+            sys.stdout.write("\n".join(lines) + "\n")
+            return
         live_render = sys.stdout.isatty()
         states, _ = scan_all(dirs, categories, width, selected_idx=None, render_live=live_render)
         if not live_render:
@@ -600,7 +628,7 @@ def main():
 
     states = [("PENDING", abbreviate(d), "-", 0, 0) for d in dirs]
     printed_lines = 0
-    status_lines: list[str] = [f"{COLORS['cyan']}Starting check...{COLORS['nc']}"]
+    status_lines: list[str] = [f"{COLORS['cyan']}Starting check...{COLORS['nc']}", *bootstrap_messages]
     selected_idx: int | None = None
     interactive = args.interactive and sys.stdin.isatty() and sys.stdout.isatty()
 
@@ -693,6 +721,8 @@ def main():
     run_scan(show_full_ui=interactive)
     if not interactive:
         return
+    if not dirs:
+        status_lines.append(f"{COLORS['yellow']}No targets in config.{COLORS['nc']} Add one manually or press 'a' to add now.")
     selected_idx = preferred_initial_index()
     status_lines.append(f"{COLORS['cyan']}Ready.{COLORS['nc']} Use commands above.")
 
