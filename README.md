@@ -16,8 +16,8 @@
   - [Keyboard shortcuts](#keyboard-shortcuts)
 - [Output states](#output-states)
 - [Environment variables](#environment-variables)
-- [Credits](#credits)
 - [Recommendation](#recommendation)
+- [Credits](#credits)
 - [License](#license)
 <!-- tocstop -->
 
@@ -38,8 +38,7 @@ It can run either as:
 | Mode 1 | Non-interactive dashboard output |
 | Mode 2 | Interactive terminal UI (`-i` / `--interactive`) |
 
-
-<img width="557" height="534" alt="check-repo-example" src="https://github.com/user-attachments/assets/d2796110-9d4a-4ae7-8bec-1e628c1f2f01" />
+<img width="1280" height="800" alt="check-repo" src="https://github.com/user-attachments/assets/0c71a38a-c74e-44b1-8f9c-42854b59b037" />
 
 ## Features
 - Concurrent repo scanning for fast updates.
