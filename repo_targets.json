@@ -1,9 +1,6 @@
 {
-  "default": [
-    "~/example",
-    "~/example2"
-  ],
+  "default": [],
   "linux": [],
-  "macos": [],
+  "macos": [ "/Users/thomasdenton/.ansible", "/Users/thomasdenton/.config", "/Users/thomasdenton/Documents/TODO", "/Users/thomasdenton/Documents/iot-sensors-displays", "/Users/thomasdenton/Documents/merit-badge-app", "/Users/thomasdenton/Documents/rfidsystem", "/Users/thomasdenton/Documents/tinkering", "/Users/thomasdenton/OctoScan", "/Users/thomasdenton/zsh-autosuggestions", "/Users/thomasdenton/late-sh", "/Users/thomasdenton/.local/share/check-repo" ],
   "wsl": []
 }
