@@ -1,6 +1,6 @@
 {
   "default": [],
   "linux": [],
-  "macos": [ "~/.ansible", "~/.config", "~/Documents/TODO", "~/Documents/iot-sensors-displays", "~/Documents/merit-badge-app", "/Users/thomasdenton/Documents/rfidsystem", "/Users/thomasdenton/Documents/tinkering", "/Users/thomasdenton/OctoScan", "/Users/thomasdenton/zsh-autosuggestions", "/Users/thomasdenton/late-sh", "~/.local/share/check-repo", "~/glint" ],
+  "macos": [ "~/.ansible", "~/.config", "~/Documents/TODO", "~/Documents/iot-sensors-displays", "~/Documents/merit-badge-app", "/Users/thomasdenton/Documents/rfidsystem", "/Users/thomasdenton/Documents/tinkering", "/Users/thomasdenton/OctoScan", "/Users/thomasdenton/zsh-autosuggestions", "/Users/thomasdenton/late-sh", "~/.local/share/check-repo", "~/glint", "~/dotty" ],
   "wsl": []
 }
