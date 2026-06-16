@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+from __future__ import annotations
+
 import json
 import os
 import platform
@@ -576,6 +578,71 @@ def delete_repo_target(path: str, category: str) -> bool:
     return True
 
 
+def summary_cache_path() -> str:
+    base = os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache")
+    return os.path.join(base, "check-repo", "summary")
+
+
+def scan_quiet(dirs: list[str]) -> list[tuple[str, str, str, int, int]]:
+    if not dirs:
+        return []
+    with ThreadPoolExecutor(max_workers=min(16, len(dirs))) as ex:
+        return list(ex.map(check_repo, dirs))
+
+
+def write_summary() -> str:
+    """Scan every configured target, write the cache file used by `doctor`,
+    and return a one-line human status string. Performs a real fetch per repo,
+    so this is the (background, daily) source of truth for ahead/behind."""
+    targets = load_repo_targets()
+    dirs = [d for _, d in targets]
+    states = scan_quiet(dirs)
+
+    total = len(states)
+    updates = sum(1 for s, *_ in states if s == "UPDATES")
+    dirty = sum(1 for s, *_ in states if s == "DIRTY")
+    not_found = sum(1 for s, *_ in states if s == "NOT_FOUND")
+    not_repo = sum(1 for s, *_ in states if s == "NOT_REPO")
+    ahead = sum(a for _, _, _, a, _ in states)
+    behind = sum(b for _, _, _, _, b in states)
+    attention = updates + dirty
+    missing = not_found + not_repo
+
+    now = time.time()
+    lines = [
+        f"TS={int(now)}",
+        f"DATE={time.strftime('%Y-%m-%d', time.localtime(now))}",
+        f"TOTAL={total}",
+        f"ATTENTION={attention}",
+        f"DIRTY={dirty}",
+        f"UPDATES={updates}",
+        f"AHEAD={ahead}",
+        f"BEHIND={behind}",
+        f"MISSING={missing}",
+    ]
+    for state, target, branch, a, b in states:
+        if state in {"DIRTY", "UPDATES", "NOT_FOUND", "NOT_REPO"}:
+            lines.append(f"ITEM={target}|{state}|{a}|{b}")
+
+    path = summary_cache_path()
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = f"{path}.tmp.{os.getpid()}"
+    with open(tmp, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines) + "\n")
+    os.replace(tmp, path)
+
+    if attention == 0 and missing == 0:
+        return f"check-repo: {total} repos · all clean"
+    bits = []
+    if dirty:
+        bits.append(f"{dirty} dirty")
+    if updates:
+        bits.append(f"{updates} updates")
+    if missing:
+        bits.append(f"{missing} missing")
+    return f"check-repo: {total} repos · {attention} need attention ({', '.join(bits)})"
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="check_repos.py",
@@ -584,12 +651,17 @@ def main():
     )
     parser.add_argument("-h", "--help", action="help", help="Show this help message and exit.")
     parser.add_argument("-i", "--interactive", action="store_true", help="Enable interactive live-updating TUI mode.")
+    parser.add_argument("-s", "--summary", action="store_true", help="Scan all targets, write the cache summary used by 'doctor', and print a one-line status.")
     args, _ = parser.parse_known_args()
 
     show_all_categories = False
     bootstrap_messages: list[str] = []
 
     _, created_default_config = ensure_config_file()
+
+    if args.summary:
+        print(write_summary())
+        return
     if created_default_config:
         bootstrap_messages.append(f"{COLORS['yellow']}Missing config file:{COLORS['nc']} created default config with ~/example target.")
 

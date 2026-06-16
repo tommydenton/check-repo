@@ -1,0 +1,3 @@
+# Personal repo list lives in private dotfiles (see $CHECK_REPOS_CONFIG).
+# Keep it out of this public fork.
+repo_targets.json
